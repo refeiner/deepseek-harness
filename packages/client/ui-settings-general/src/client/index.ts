@@ -50,6 +50,20 @@ export type { SettingsDocumentState } from './settings-document-store.ts'
 export { SettingsDocumentStore } from './settings-document-store.ts'
 export type { SettingsKey } from './locales.ts'
 
+declare module '@deepseek-ai/cordis' {
+  interface Context {
+    /** Navigation to registered sections of the native Settings shell. */
+    settingsNavigation: {
+      /**
+       * Open one registered section without changing its configuration.
+       * @param id - settings.section entry identifier.
+       * @returns false if the section is absent; otherwise opens it and returns true.
+       */
+      openSection(id: string): boolean
+    }
+  }
+}
+
 declare module '@deepseek-ai/dsh-client-ui-slots' {
   interface LocaleNamespaceMap {
     /** Shell chrome + shell-owned General section copy. */
@@ -73,6 +87,14 @@ export const inject = ['slots', 'locale', 'connection', 'remote', 'remote.settin
  * @param ctx - client root context.
  */
 export function apply(ctx: ClientContext): void {
+  let sectionNavigation: { openSection: (id: string) => void } | null = null
+  ctx.effect(() => ctx.reflect.provide('settingsNavigation', {
+    openSection: (id: string) => {
+      if (!sectionNavigation || !ctx.slots.entries('settings.section').some(entry => entry.options.id === id)) return false
+      sectionNavigation.openSection(id)
+      return true
+    },
+  }), 'ui-settings-general: section navigation')
   ctx.slots.inject('settings.general.item', () => ctx.slots.register({
     name: 'settings.general.item', id: 'developer-tools', order: 15, locale: NS,
     inject: (): DeveloperToolsRowInjected => ({
@@ -176,6 +198,8 @@ export function apply(ctx: ClientContext): void {
     const shellHandle = createSettingsShellStore()
     const shellInstance = shellHandle.create()
     const shellStore: typeof shellHandle = { ...shellHandle, create: () => shellInstance }
+    const navigation = { openSection: (id: string) => { shellInstance.actions.openSection(id) } }
+    sectionNavigation = navigation
     const disposeCommand = ctx.shortcuts.register({
       id: 'settings.open' as ShortcutCommandId, label: () => t('shortcut.open'), aliases: ['settings', 'preferences'],
       defaults: {
@@ -210,7 +234,7 @@ export function apply(ctx: ClientContext): void {
       },
       inject: shellInjected,
     }, SettingsRoot)
-    return () => { disposeCommand(); disposeSlot() }
+    return () => { if (sectionNavigation === navigation) sectionNavigation = null; disposeCommand(); disposeSlot() }
   })
 
   ctx.slots.inject('settings.trigger', () =>

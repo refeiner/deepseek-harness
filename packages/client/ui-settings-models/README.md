@@ -27,6 +27,8 @@ Desktop product events use the optional [product analytics service](../product-a
 <a id="use-this-package"></a>
 ## Use this package
 
+The `re-vash` client build registers neither automatic first-run step. Its independent product login owns entry; the Models page and explicit provider credential editing remain available.
+
 Saving credentials or a custom provider preserves the selected model. The user can select an available model from the composer.
 
 DeepSeek Account appears first and DeepSeek second in the provider list; third-party providers retain their directory order.

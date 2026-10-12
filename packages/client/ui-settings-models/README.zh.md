@@ -27,6 +27,8 @@ kind: "package-reference"
 <a id="use-this-package"></a>
 ## 使用本包
 
+`re-vash` 客户端构建不注册两个自动首次引导步骤，由独立产品登录负责入口；模型页面与显式提供方凭据编辑仍然可用。
+
 保存凭据或自定义提供方时保留已选模型。用户可在 composer 中选择可用模型。
 
 提供方列表中 DeepSeek 账号排第一，DeepSeek 排第二；第三方提供方保留目录中的相对顺序。
