@@ -63,8 +63,8 @@ if ($TestProgress -or $CompileProgressOnly) {
 }
 Add-Type -AssemblyName System.Drawing
 foreach ($asset in @('brand', 'brand-2x', 'brand-dark', 'brand-dark-2x', 'uninstaller-sidebar')) {
-    $assetRoot = if ($env:DSH_CLIENT_BUILD_PROFILE -eq 're-vash') { $env:OS_DASH_BRAND_ASSETS } else { Join-Path $installerRoot 'assets' }
-    if (-not $assetRoot) { throw 'Product installer requires OS_DASH_BRAND_ASSETS.' }
+    $assetRoot = if ($env:DSH_CLIENT_BUILD_PROFILE -eq 're-vash') { $env:RE_VASH_BRAND_ASSETS } else { Join-Path $installerRoot 'assets' }
+    if (-not $assetRoot) { throw 'Product installer requires RE_VASH_BRAND_ASSETS.' }
     $image = [Drawing.Image]::FromFile((Join-Path $assetRoot "$asset.png"))
     try {
         $bitmap = [Drawing.Bitmap]::new($image.Width, $image.Height, [Drawing.Imaging.PixelFormat]::Format24bppRgb)

@@ -27,7 +27,7 @@ async function main(): Promise<void> {
     environment: loadLayeredEnv('dsh'),
     profile: 'desktop',
     resolvedProfile: { profile, installAnchor },
-    patchFiles: process.env.OS_DASH_PRODUCT_PATCH ? [process.env.OS_DASH_PRODUCT_PATCH]
+    patchFiles: process.env.RE_VASH_PRODUCT_PATCH ? [process.env.RE_VASH_PRODUCT_PATCH]
       : existsSync(join(runtimeDir, 'product.patch.yml')) ? [join(runtimeDir, 'product.patch.yml')] : [],
     args: ['--no-open', '--port', '0'],
     ...(process.argv[5] === undefined ? {} : {

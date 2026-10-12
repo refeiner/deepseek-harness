@@ -661,7 +661,7 @@ async function main(): Promise<void> {
   })
 
   const productSession = process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash'
-    ? new ProductSession(join(app.getPath('userData'), 're-vash-session.json'), new URL(process.env.OS_DASH_PLATFORM_URL ?? 'http://127.0.0.1:3701').origin) : undefined
+    ? new ProductSession(join(app.getPath('userData'), 're-vash-session.json'), new URL(process.env.RE_VASH_PLATFORM_URL ?? 'http://127.0.0.1:3701').origin) : undefined
   await productSession?.load()
 
   protocol.handle(SCHEME, (request) => {
@@ -932,7 +932,7 @@ async function main(): Promise<void> {
     updates.dispose()
   })
 
-  const applicationIconPath = development ? process.env.OS_DASH_BRAND_ICON ?? join(app.getAppPath(), 'resources', 'icon-windows.png')
+  const applicationIconPath = development ? process.env.RE_VASH_BRAND_ICON ?? join(app.getAppPath(), 'resources', 'icon-windows.png')
     : join(process.resourcesPath, 'icon.png')
   app.setAboutPanelOptions({
     applicationName: process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash' ? '空烬' : 'DeepSeek Harness',

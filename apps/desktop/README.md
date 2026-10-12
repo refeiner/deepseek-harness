@@ -24,7 +24,7 @@ Press F12 (Fn+F12 on media-key keyboards), Command+Option+I on macOS, or Ctrl+Sh
 
 ## Product composition
 
-With `DSH_CLIENT_BUILD_PROFILE=re-vash`, the shell enters the product login directly and uses application resources supplied by `OS_DASH_BRAND_ASSETS`. `OS_DASH_PRODUCT_DIST` supplies self-contained plugins and a portable profile to the packaged runtime; `OS_DASH_PRODUCT_PATCH` selects the workspace profile during development. Product session cookies stay in a main-process file under userData, scoped to `OS_DASH_PLATFORM_URL` and their server expiry. HTTP forwarding and WebSocket headers carry that session alongside the launch-carrier cookie; logout clears the saved value. The ordinary Harness composition retains its account welcome flow and assets.
+With `DSH_CLIENT_BUILD_PROFILE=re-vash`, the shell enters the product login directly and uses application resources supplied by `RE_VASH_BRAND_ASSETS`. `RE_VASH_PRODUCT_DIST` supplies self-contained plugins and a portable profile to the packaged runtime; `RE_VASH_PRODUCT_PATCH` selects the workspace profile during development. Product session cookies stay in a main-process file under userData, scoped to `RE_VASH_PLATFORM_URL` and their server expiry. HTTP forwarding and WebSocket headers carry that session alongside the launch-carrier cookie; logout clears the saved value. The ordinary Harness composition retains its account welcome flow and assets.
 
 Product login initializes its language from the operating system without reading protected Host settings. After login, the client locale service adopts the saved language through its authenticated settings subscription. The native locale IPC accepts only the owned application main frame; business API and stream authentication remains required.
 

@@ -142,20 +142,20 @@ async function main(): Promise<void> {
       })
     })
     const productPackages: Record<string, string> = {}
-    if (process.env.OS_DASH_PRODUCT_DIST) {
-      const product = resolve(process.env.OS_DASH_PRODUCT_DIST)
+    if (process.env.RE_VASH_PRODUCT_DIST) {
+      const product = resolve(process.env.RE_VASH_PRODUCT_DIST)
       if (!existsSync(join(product, 'product.patch.yml'))) throw new Error('desktop runtime: product profile is missing')
       cpSync(join(product, 'node_modules'), join(DSH_OUTPUT_ROOT, 'node_modules'), { recursive: true, dereference: true })
       copyFileSync(join(product, 'product.patch.yml'), join(DSH_OUTPUT_ROOT, 'product.patch.yml'))
-      const brand = process.env.OS_DASH_BRAND_ASSETS
+      const brand = process.env.RE_VASH_BRAND_ASSETS
       if (!brand) throw new Error('desktop runtime: product brand assets are missing')
       const frontend = join(DSH_OUTPUT_ROOT, 'node_modules', '@deepseek-ai', 'dsh-web-frontend', 'dist')
       copyFileSync(join(brand, 'app-icon.svg'), join(frontend, 'favicon.svg'))
       const manifestPath = join(frontend, 'manifest.webmanifest')
       const webManifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>
       writeFileSync(manifestPath, JSON.stringify({ ...webManifest, name: '空烬', short_name: '空烬', icons: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }] }))
-      for (const name of readdirSync(join(product, 'node_modules', '@os-dash'))) {
-        const manifest = JSON.parse(readFileSync(join(product, 'node_modules', '@os-dash', name, 'package.json'), 'utf8')) as { name: string; version: string }
+      for (const name of readdirSync(join(product, 'node_modules', '@re-vash'))) {
+        const manifest = JSON.parse(readFileSync(join(product, 'node_modules', '@re-vash', name, 'package.json'), 'utf8')) as { name: string; version: string }
         productPackages[manifest.name] = manifest.version
       }
     }

@@ -31,7 +31,7 @@ export function prepareDevelopmentApp(options: DevelopmentAppOptions): string {
   const executable = join(bundle, 'Contents', 'MacOS', 'HarnessDev')
   const stamp = join(bundle, 'Contents', 'Resources', 'dsh-development.json')
   const launcher = developmentLauncher(options, bundle)
-  const brandIcon = process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash' && process.env.OS_DASH_BRAND_ASSETS ? join(process.env.OS_DASH_BRAND_ASSETS, 'app.icns') : undefined
+  const brandIcon = process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash' && process.env.RE_VASH_BRAND_ASSETS ? join(process.env.RE_VASH_BRAND_ASSETS, 'app.icns') : undefined
   const identity = JSON.stringify({ ...options, launcher, brandIconHash: brandIcon ? createHash('sha256').update(readFileSync(brandIcon)).digest('hex') : null, plist: readFileSync(join(source, 'Contents', 'Info.plist'), 'utf8') })
   if (!existsSync(stamp) || readFileSync(stamp, 'utf8') !== identity) {
     rmSync(bundle, { recursive: true, force: true })
@@ -65,7 +65,7 @@ export function prepareDevelopmentApp(options: DevelopmentAppOptions): string {
  */
 export function developmentLauncher(options: DevelopmentAppOptions, bundle: string): string {
   const environment = {
-    ...Object.fromEntries(['DSH_CLIENT_BUILD_PROFILE', 'OS_DASH_PLATFORM_URL', 'OS_DASH_PRODUCT_PATCH', 'OS_DASH_BRAND_ICON', 'OS_DASH_BRAND_ASSETS'].flatMap(key => process.env[key] ? [[key, process.env[key]]] : [])),
+    ...Object.fromEntries(['DSH_CLIENT_BUILD_PROFILE', 'RE_VASH_PLATFORM_URL', 'RE_VASH_PRODUCT_PATCH', 'RE_VASH_BRAND_ICON', 'RE_VASH_BRAND_ASSETS'].flatMap(key => process.env[key] ? [[key, process.env[key]]] : [])),
     DSH_HOME: options.home,
     DSH_DESKTOP_DEV_APP: '1',
     DSH_DESKTOP_HOST_INSPECT_PORT: String(options.hostPort),

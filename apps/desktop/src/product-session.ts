@@ -33,13 +33,13 @@ export class ProductSession {
   }
   /** @returns Cookie header fragment, or empty when signed out or expired. */
   cookie(): string {
-    return this.saved && this.saved.expiresAt > Date.now() ? `osdash_session=${this.saved.value}` : ''
+    return this.saved && this.saved.expiresAt > Date.now() ? `revash_session=${this.saved.value}` : ''
   }
   /** @param header - Host response cookie; unrelated carrier cookies are ignored. */
   async accept(header: string): Promise<void> {
     const cookie = header.split(';', 1).join('')
-    if (!cookie.startsWith('osdash_session=')) return
-    const value = cookie.slice('osdash_session='.length)
+    if (!cookie.startsWith('revash_session=')) return
+    const value = cookie.slice('revash_session='.length)
     const expiry = /(?:^|;)\s*Expires=([^;]+)/iu.exec(header)
     const expiresAt = Date.parse(expiry?.[1] ?? '')
     const cleared = !value || expiresAt <= Date.now() || /(?:^|;)\s*Max-Age=0(?:;|$)/iu.test(header)

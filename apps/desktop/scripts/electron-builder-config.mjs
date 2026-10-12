@@ -52,8 +52,8 @@ export function createElectronBuilderConfig(
 ) {
   const appId = resolveDesktopAppId(env)
   const product = env.DSH_CLIENT_BUILD_PROFILE === 're-vash'
-  const productAssets = env.OS_DASH_BRAND_ASSETS
-  if (product && !productAssets) throw new Error('desktop package: OS_DASH_BRAND_ASSETS is required for RE-VASH')
+  const productAssets = env.RE_VASH_BRAND_ASSETS
+  if (product && !productAssets) throw new Error('desktop package: RE_VASH_BRAND_ASSETS is required for RE-VASH')
   const icon = (fallback, size = '512') => product ? join(productAssets, `icon-${size}.png`) : fileURLToPath(new URL(fallback, import.meta.url))
   const policy = resolveDesktopPolicyEnvironment(env)
   const targetPlatform = env.DSH_DESKTOP_TARGET_PLATFORM
@@ -106,7 +106,7 @@ export function createElectronBuilderConfig(
     protocols: [{ name: product ? '空烬' : 'DeepSeek Harness', schemes: ['dsh'] }],
     extraMetadata: {
       dshDesktopAppId: appId,
-      ...(product ? { name: 're-vash', osDashProduct: 're-vash' } : {}),
+      ...(product ? { name: 're-vash', reVashProduct: 're-vash' } : {}),
       dshMandatoryUpdatePolicy: policy,
       ...buildVersion === productVersion ? {} : { version: buildVersion },
       ...packaged === undefined ? {} : { dshBuildCommit: packaged.commit, dshBuildDirty: packaged.dirty },
