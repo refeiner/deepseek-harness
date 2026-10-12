@@ -65,6 +65,16 @@ declare module '@deepseek-ai/cordis' {
      * @mode waterfall
      */
     'connection/request'(request: IncomingMessage, response: ServerResponse, next: () => Promise<void>): Promise<void>
+    /**
+     * Admit or wrap a carrier-authenticated WebSocket upgrade.
+     * @param request - Authenticated upgrade request.
+     * @param socket - Socket whose lifetime the policy may revoke.
+     * @param authorizers - Per-socket checks run before dispatching each new logical stream.
+     * @param next - Delegate to the next policy or the stream mux.
+     * @mode waterfall
+     */
+    'connection/upgrade'(request: IncomingMessage, socket: import('node:stream').Duplex, authorizers: Array<() => Promise<void>>, next: () => Promise<void>): Promise<void>
+
   }
 }
 

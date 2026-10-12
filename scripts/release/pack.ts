@@ -10,6 +10,7 @@
 import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { parseArgs } from 'node:util'
+import { repositoryClientBuildEnvironment } from '../client-build-environment.ts'
 import { pnpmInvocation } from '../pnpm-invocation.ts'
 import { releaseFamily, tarballName, type ReleaseFamily, type ReleaseMember } from './families.ts'
 import { isEntry, runConcurrent } from './process.ts'
@@ -52,7 +53,12 @@ function parseConcurrency(raw: string | undefined): number {
 /** Pack the family named by `--family` into `--out`. */
 async function main(): Promise<void> {
   const { values } = parseArgs({
-    options: { family: { type: 'string' }, out: { type: 'string' }, concurrency: { type: 'string' } },
+    options: {
+      family: { type: 'string' },
+      'client-profile': { type: 'string' },
+      out: { type: 'string' },
+      concurrency: { type: 'string' },
+    },
     allowPositionals: false,
   })
   if (values.family === undefined) throw new Error('usage: pack.ts --family <dsh|vendor> [--out dist/npm] [--concurrency 1]')
@@ -62,7 +68,9 @@ async function main(): Promise<void> {
   const root = process.cwd()
   const destination = resolve(root, values.out ?? DEFAULT_OUTPUT)
   const members = family.publishOrder(family.members(root)).order
-  family.verifyBuildArtifacts(root)
+  const clientProfile = values['client-profile']
+  if (clientProfile !== undefined && clientProfile !== 'repository') throw new Error('--client-profile only accepts repository; omit it for an official release')
+  family.verifyBuildArtifacts(root, clientProfile === 'repository' ? repositoryClientBuildEnvironment(root, process.env) : undefined)
   family.verifyVersions(members)
 
   rmSync(destination, { recursive: true, force: true })

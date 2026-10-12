@@ -347,9 +347,11 @@ export interface DesktopLocale {
 
 /** Resolve Electron's locale to one shipped Desktop dictionary. */
 export function resolveDesktopLocale(locale: string): DesktopLocale {
-  return locale.toLowerCase().startsWith('zh')
+  const selected: DesktopLocale = locale.toLowerCase().startsWith('zh')
     ? { id: 'zh-CN', messages: zh }
     : { id: 'en', messages: en }
+  if (process.env.DSH_CLIENT_BUILD_PROFILE !== 're-vash') return selected
+  return { ...selected, messages: Object.fromEntries(Object.entries(selected.messages).map(([key, value]) => [key, value.replaceAll('DeepSeek Harness', '空烬')])) as DesktopMessages }
 }
 
 /**

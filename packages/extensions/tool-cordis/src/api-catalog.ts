@@ -3977,6 +3977,14 @@ export const EVENT_API: readonly EventApiEntry[] = [
     parameters: [{ name: 'request', description: 'Authenticated incoming HTTP request.' }, { name: 'response', description: 'Response owned until the delegated bridge settles.' }, { name: 'next', description: 'Delegate to the next listener or the shared API bridge.' }],
   },
   {
+    name: 'connection/upgrade',
+    mode: 'waterfall',
+    signature: '\'connection/upgrade\'(request: IncomingMessage, socket: import(\'node:stream\').Duplex, authorizers: Array<() => Promise<void>>, next: () => Promise<void>): Promise<void>',
+    summary: 'Admit or wrap a carrier-authenticated WebSocket upgrade.',
+    description: 'Admit or wrap a carrier-authenticated WebSocket upgrade.',
+    parameters: [{ name: 'request', description: 'Authenticated upgrade request.' }, { name: 'socket', description: 'Socket whose lifetime the policy may revoke.' }, { name: 'authorizers', description: 'Per-socket checks run before dispatching each new logical stream.' }, { name: 'next', description: 'Delegate to the next policy or the stream mux.' }],
+  },
+  {
     name: 'cordis/dynamic-package',
     mode: 'emit',
     signature: '\'cordis/dynamic-package\'(pkg: DynamicCordisPackage): void',

@@ -1,4 +1,5 @@
 /** Local Web document and authenticated HTTP forwarding for the application window. */
+import type { ProductSession } from './product-session.ts'
 import { readFile } from 'node:fs/promises'
 import { extname, resolve, sep } from 'node:path'
 
@@ -72,9 +73,10 @@ const PLUGIN_BUNDLE_PATH = /^\/plugins\//u
  * @param request - Request from the application origin.
  * @param host - Owned Host URL.
  * @param cookie - Host-issued authentication cookie.
+ * @param product - Optional main-process product session owner.
  * @returns Host response without connection-level headers.
  */
-export async function forwardWebRequest(request: Request, host: string, cookie: string): Promise<Response> {
+export async function forwardWebRequest(request: Request, host: string, cookie: string, product?: ProductSession): Promise<Response> {
   const source = new URL(request.url)
   const origin = request.headers.get('origin')
   if (origin !== null && origin !== 'dsh-app://app') return new Response(null, { status: 403 })
@@ -83,9 +85,10 @@ export async function forwardWebRequest(request: Request, host: string, cookie: 
   target.search = source.search
   const headers = new Headers(request.headers)
   for (const name of ['host', 'origin', 'cookie', 'sec-fetch-site']) headers.delete(name)
-  headers.set('cookie', cookie)
+  headers.set('cookie', [cookie, product?.cookie()].filter(Boolean).join('; '))
   const init = { method: request.method, headers, body: request.body, signal: request.signal, duplex: 'half', redirect: 'manual' as const }
   const response = await fetch(target, init)
+  for (const header of response.headers.getSetCookie()) await product?.accept(header)
   const outgoing = new Headers(response.headers)
   for (const name of WITHHELD_RESPONSE_HEADERS) outgoing.delete(name)
   if (PLUGIN_BUNDLE_PATH.test(source.pathname)) outgoing.set('cache-control', 'no-store')

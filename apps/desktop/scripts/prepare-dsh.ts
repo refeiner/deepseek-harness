@@ -2,7 +2,7 @@
 
 import { packagingStep } from './packaging-step.mjs'
 import { spawn } from 'node:child_process'
-import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, cpSync, existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { delimiter, join, relative, resolve } from 'node:path'
 import { desktopNodeEnvironment } from '../src/node-environment.ts'
@@ -141,9 +141,27 @@ async function main(): Promise<void> {
         filter: source => desktopRuntimeFileExclusion(relative(modules, source), target, officeEngine) === undefined,
       })
     })
+    const productPackages: Record<string, string> = {}
+    if (process.env.OS_DASH_PRODUCT_DIST) {
+      const product = resolve(process.env.OS_DASH_PRODUCT_DIST)
+      if (!existsSync(join(product, 'product.patch.yml'))) throw new Error('desktop runtime: product profile is missing')
+      cpSync(join(product, 'node_modules'), join(DSH_OUTPUT_ROOT, 'node_modules'), { recursive: true, dereference: true })
+      copyFileSync(join(product, 'product.patch.yml'), join(DSH_OUTPUT_ROOT, 'product.patch.yml'))
+      const brand = process.env.OS_DASH_BRAND_ASSETS
+      if (!brand) throw new Error('desktop runtime: product brand assets are missing')
+      const frontend = join(DSH_OUTPUT_ROOT, 'node_modules', '@deepseek-ai', 'dsh-web-frontend', 'dist')
+      copyFileSync(join(brand, 'app-icon.svg'), join(frontend, 'favicon.svg'))
+      const manifestPath = join(frontend, 'manifest.webmanifest')
+      const webManifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as Record<string, unknown>
+      writeFileSync(manifestPath, JSON.stringify({ ...webManifest, name: '空烬', short_name: '空烬', icons: [{ src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }] }))
+      for (const name of readdirSync(join(product, 'node_modules', '@os-dash'))) {
+        const manifest = JSON.parse(readFileSync(join(product, 'node_modules', '@os-dash', name, 'package.json'), 'utf8')) as { name: string; version: string }
+        productPackages[manifest.name] = manifest.version
+      }
+    }
     writeFileSync(join(DSH_OUTPUT_ROOT, 'package.json'), `${JSON.stringify({
       name: '@deepseek-ai/dsh-desktop-runtime', private: true, version: release.version, type: 'module',
-      dependencies: Object.fromEntries(packageSet.packages.map(entry => [entry.name, entry.version])),
+      dependencies: { ...Object.fromEntries(packageSet.packages.map(entry => [entry.name, entry.version])), ...productPackages },
     }, undefined, 2)}\n`)
     for (const file of DESKTOP_HOST_RUNTIME_FILES) {
       if (!existsSync(join(DSH_OUTPUT_ROOT, 'node_modules', DESKTOP_HOST_PACKAGE, file))) {
@@ -159,7 +177,7 @@ async function main(): Promise<void> {
     }
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:manifests', () => prepareRuntimeManifests(DSH_OUTPUT_ROOT))
     await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:primary-smoke', async () => smokePrimaryRuntime(join(RUNTIME_ROOT, 'primary-runtime')))
-    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => writeDesktopRuntime(DSH_OUTPUT_ROOT, release, packageSet.packages.map(entry => entry.name), target))
+    await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:write-descriptor', async () => writeDesktopRuntime(DSH_OUTPUT_ROOT, release, [...packageSet.packages.map(entry => entry.name), ...Object.keys(productPackages)], target))
     const descriptor = await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:verify-before-smoke', () => verifyDesktopRuntime(DSH_OUTPUT_ROOT, release.version, target))
     if (!process.argv.includes('--defer-runtime-smoke')) {
       await packagingStep(process.env.DSH_DESKTOP_PACKAGING_RUN_DIR, 'runtime:smoke', () => smokePreparedRuntime(DSH_OUTPUT_ROOT, NODE, RUNTIME_ROOT, descriptor))

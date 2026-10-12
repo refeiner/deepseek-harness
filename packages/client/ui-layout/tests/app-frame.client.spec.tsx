@@ -254,6 +254,27 @@ describe('AppFrame', () => {
     expect(frame.querySelector('[data-shell-leading-band]')).toBeNull()
   })
 
+  it('hides the product mobile rail and keeps its reopen controls available', () => {
+    vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 're-vash')
+    frameWidth = 375
+    try {
+      const { frame, instance, queryByTestId, sidebarOwner } = mountFrame()
+      expect(tracks(frame)).toEqual([0, 0])
+      expect(sidebarOwner()).toEqual({ collapsed: true, width: 0 })
+      expect(queryByTestId('sidebar-content')?.parentElement?.hidden).toBe(true)
+      expect(queryByTestId('shell.leading-content')).toBeTruthy()
+      act(() => { instance.actions.toggleSidebar() })
+      expect(tracks(frame)[0]).toBe(280)
+      expect(queryByTestId('sidebar-content')?.parentElement?.hidden).toBe(false)
+      act(() => { instance.actions.toggleSidebar() })
+      expect(tracks(frame)[0]).toBe(0)
+      resize(768)
+      expect(tracks(frame)[0]).toBe(56)
+      resize(1440)
+      expect(tracks(frame)[0]).toBe(280)
+    } finally { vi.unstubAllEnvs() }
+  })
+
   it('mounts the shell.leading seat only while the darwin collapse hides the column', () => {
     document.documentElement.dataset.platform = 'darwin'
     const { frame, instance, sidebarOwner, queryByTestId } = mountFrame()

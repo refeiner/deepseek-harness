@@ -339,6 +339,25 @@ afterEach(async () => {
 })
 
 describe('Typert Remote streams', () => {
+  it('rechecks policy admission for each new logical stream on an existing socket', async () => {
+    const { ctx, service } = await setup(true)
+    let active = true
+    const check = vi.fn(async () => { if (!active) throw new Error('session revoked') })
+    ctx.on('connection/upgrade', async (_request, _socket, authorizers, next) => { authorizers.push(check); await next() })
+    const socket = new WebSocket(`ws://127.0.0.1:${String(ctx.webServer.port)}/api/remote.mux`, { headers: { cookie: browserCookie(ctx) } })
+    await once(socket, 'open')
+    const frames: Record<string, unknown>[] = []
+    socket.on('message', (data) => { frames.push(JSON.parse(rawText(data)) as Record<string, unknown>) })
+    sendOpen(socket, 'allowed', 'feed/follow', { label: 'first' })
+    await vi.waitFor(() => { expect(service.signals).toHaveLength(1) })
+    active = false
+    sendOpen(socket, 'revoked', 'feed/follow', { label: 'second' })
+    await vi.waitFor(() => { expect(frames).toContainEqual(expect.objectContaining({ type: 'error', streamId: 'revoked' })) })
+    expect(service.signals).toHaveLength(1)
+    expect(check).toHaveBeenCalledTimes(2)
+    const closed = once(socket, 'close'); socket.close(); await closed
+  })
+
   it('reports Client event streams without counting a bare WebSocket', async () => {
     const { ctx } = await setup(true)
     const source = new RemoteEventSourceProbe()

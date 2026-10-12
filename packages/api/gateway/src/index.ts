@@ -250,13 +250,19 @@ export class TypertGatewayService extends Service implements TypertGateway {
           yield () => mux.close()
           const route: WebUpgradeRoute = {
             path: REMOTE_STREAM_MUX_PATH,
-            handler: (req, socket, head) => {
+            handler: async (req, socket, head) => {
               const admission = webCtx.connection.admit(req)
               if ('rejection' in admission) {
                 rejectRemoteStreamUpgrade(socket, admission.rejection)
                 return
               }
-              mux.handleUpgrade(req, socket, head, admission.peer)
+              const authorizers: Array<() => Promise<void>> = []
+              await webCtx.waterfall('connection/upgrade', req, socket, authorizers, () => {
+                mux.handleUpgrade(req, socket, head, admission.peer, async () => {
+                  for (const authorize of authorizers) await authorize()
+                })
+                return Promise.resolve()
+              })
             },
           }
           yield webCtx.webServer.registerUpgrade(route)

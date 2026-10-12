@@ -12,6 +12,7 @@ const state = vi.hoisted(() => ({
   appListeners: new Map<string, (...args: unknown[]) => void>(),
   dialogLocale: undefined as (() => DesktopLocale) | undefined,
   beforeRead: vi.fn(async () => {}),
+  readLocalePreference: vi.fn(async (): Promise<string> => state.preference),
   beforeWelcome: vi.fn(async () => {}),
   copy: vi.fn(),
   expiryListener: undefined as (() => void) | undefined,
@@ -124,7 +125,7 @@ vi.mock('../src/host-process.ts', () => ({
 vi.mock('../src/welcome-backend.ts', () => ({
   connectDesktopWelcome: async () => ({
     analyticsEnabled: async () => false,
-    readLocalePreference: async () => state.preference,
+    readLocalePreference: state.readLocalePreference,
     read: async () => {
       await state.beforeRead()
       return { loggedIn: false, hasApiKey: state.hasApiKey, writable: true, localePreference: state.preference }
@@ -144,6 +145,10 @@ vi.mock('node:fs/promises', async importOriginal => ({
   ...await importOriginal<typeof import('node:fs/promises')>(),
   readFile: vi.fn(async () => '{}'),
 }))
+vi.mock('../src/product-session.ts', () => ({ ProductSession: class {
+  async load() {}
+  cookie() { return '' }
+} }))
 vi.mock('../src/update-dialog.ts', () => ({ DesktopUpdateDialog: class {
   constructor(_preload: string, locale: () => DesktopLocale) { state.dialogLocale = locale }
   dispose() {}
@@ -169,6 +174,28 @@ afterEach(() => {
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
   vi.restoreAllMocks()
+})
+
+it('boots product locale without protected settings and rejects foreign frames', async () => {
+  vi.resetModules()
+  vi.clearAllMocks()
+  vi.useFakeTimers()
+  vi.stubEnv('DSH_CLIENT_BUILD_PROFILE', 're-vash')
+  vi.stubEnv('DSH_DESKTOP_DEV_PROJECT_DIR', '/development-profile')
+  vi.stubEnv('DSH_DESKTOP_PRIMARY_RUNTIME_DIR', '/runtime/primary-runtime')
+  vi.stubEnv('DSH_DESKTOP_OPEN_DEVTOOLS', '0')
+  vi.stubEnv('DSH_DESKTOP_MANDATORY_UPDATE_CONFIG', undefined)
+  state.readLocalePreference.mockRejectedValueOnce(new Error('HTTP 401'))
+  await import('../src/main.ts')
+  await vi.waitFor(() => { expect(state.loadWorkspace).toHaveBeenCalled() })
+  const contents = state.contents!
+  const bootstrap = state.handlers.get(DESKTOP_IPC.localeBootstrap)!
+  expect(await bootstrap({ sender: contents, senderFrame: contents.mainFrame }))
+    .toEqual({ languages: ['en-US'], preference: null })
+  expect(state.readLocalePreference).not.toHaveBeenCalled()
+  await expect(bootstrap({ sender: contents, senderFrame: {} })).rejects.toThrow('unowned frame')
+  await expect(bootstrap({ sender: {}, senderFrame: contents.mainFrame })).rejects.toThrow('unowned frame')
+  state.readLocalePreference.mockReset().mockImplementation(async () => state.preference)
 })
 
 it.each([false, true])('starts welcome onboarding without carrying update focus into login or skip (Windows update=%s)', async (updated) => {

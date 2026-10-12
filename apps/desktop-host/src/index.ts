@@ -1,3 +1,4 @@
+import { existsSync } from 'node:fs'
 /** Launch the Desktop profile through the Web application and report its URL to Electron. */
 
 import { delimiter, join } from 'node:path'
@@ -26,7 +27,8 @@ async function main(): Promise<void> {
     environment: loadLayeredEnv('dsh'),
     profile: 'desktop',
     resolvedProfile: { profile, installAnchor },
-    patchFiles: [],
+    patchFiles: process.env.OS_DASH_PRODUCT_PATCH ? [process.env.OS_DASH_PRODUCT_PATCH]
+      : existsSync(join(runtimeDir, 'product.patch.yml')) ? [join(runtimeDir, 'product.patch.yml')] : [],
     args: ['--no-open', '--port', '0'],
     ...(process.argv[5] === undefined ? {} : {
       packageManager: {

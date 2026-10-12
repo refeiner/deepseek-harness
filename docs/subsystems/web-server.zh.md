@@ -201,6 +201,26 @@ Admit or wrap an authenticated shared API request, including body transfer. Exis
 
 Source: [`packages/client/connection/src/index.ts`](../../packages/client/connection/src/index.ts)
 
+<a id="connectionupgrade--waterfall"></a>
+
+#### `connection/upgrade` — waterfall
+
+Admit or wrap a carrier-authenticated WebSocket upgrade.
+
+```ts cordis-catalog
+/**
+ * Admit or wrap a carrier-authenticated WebSocket upgrade.
+ * @param request - Authenticated upgrade request.
+ * @param socket - Socket whose lifetime the policy may revoke.
+ * @param authorizers - Per-socket checks run before dispatching each new logical stream.
+ * @param next - Delegate to the next policy or the stream mux.
+ * @mode waterfall
+ */
+'connection/upgrade'(request: IncomingMessage, socket: import('node:stream').Duplex, authorizers: Array<() => Promise<void>>, next: () => Promise<void>): Promise<void>
+```
+
+Source: [`packages/client/connection/src/index.ts`](../../packages/client/connection/src/index.ts)
+
 <a id="webserver-events"></a>
 
 ### `webserver/*` events

@@ -203,6 +203,19 @@ describe('release families', () => {
     expect(() => { dsh.verifyBuildArtifacts(official) }).toThrow(/artifacts differ/)
   })
 
+  it('verifies an explicit product environment and its artifact bytes without weakening the official default', () => {
+    const family = releaseFamily('dsh')
+    const official = officialClientBuildEnvironment(resolve(import.meta.dirname, '../..'))
+    const environment = { ...official, DSH_CLIENT_BUILD_PROFILE: 're-vash', DSH_CLIENT_TITLE: '空烬' }
+    vi.stubEnv('DSH_CLIENT_COMMIT_HASH', official.DSH_CLIENT_COMMIT_HASH)
+    const root = buildFixture(environment)
+    expect(() => { family.verifyBuildArtifacts(root) }).toThrow(/DSH_CLIENT/)
+    expect(() => { family.verifyBuildArtifacts(root, environment) }).not.toThrow()
+    expect(() => { family.verifyBuildArtifacts(root, { ...environment, DSH_CLIENT_TITLE: 'Other' }) }).toThrow(/DSH_CLIENT_TITLE/)
+    write(join(root, 'packages/client/example/lib/client.js'), 'modified')
+    expect(() => { family.verifyBuildArtifacts(root, environment) }).toThrow(/artifacts differ/)
+  })
+
   it('publishes a dependency before its consumer, and orders ties by name', () => {
     const dsh = releaseFamily('dsh')
     const members = [

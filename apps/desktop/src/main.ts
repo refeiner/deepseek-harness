@@ -1,7 +1,8 @@
-import type { ProductEventMap, ProductEvent } from '@deepseek-ai/dsh-client-product-analytics/types'
-import { WINDOWS_TITLEBAR_HEIGHT } from './windows-layout.ts'
 /** Electron shell: desktop project ownership, custom protocol, windows, and lifecycle. */
 
+import { ProductSession } from './product-session.ts'
+import type { ProductEventMap, ProductEvent } from '@deepseek-ai/dsh-client-product-analytics/types'
+import { WINDOWS_TITLEBAR_HEIGHT } from './windows-layout.ts'
 import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -472,7 +473,7 @@ async function main(): Promise<void> {
           if (state.status === 'credential-stored' && attempt?.phase === 'succeeded' && welcomeWindow !== undefined) void enterWorkspace({ activate: false }).catch(() => undefined)
           if (previousAccountStatus === 'credential-stored' && state.status === 'signed-out') {
             void readWelcomeState().then(async (value) => {
-              if (needsWelcome(value) && !quitting) {
+              if (process.env.DSH_CLIENT_BUILD_PROFILE !== 're-vash' && needsWelcome(value) && !quitting) {
                 enteredWorkspace = false
                 await showWelcome()
                 if (welcomeWindow !== undefined && !welcomeWindow.isDestroyed()) welcomeWindow.webContents.send(WELCOME_IPC.state, state)
@@ -485,7 +486,7 @@ async function main(): Promise<void> {
           // The stream reconnects; a transport failure does not change account state.
         }, () => {
           void readWelcomeState().then(async (value) => {
-            if (!needsWelcome(value) || quitting) return
+            if (process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash' || !needsWelcome(value) || quitting) return
             pendingWelcomeNotice = 'session-expired'
             enteredWorkspace = false
             await showWelcome()
@@ -659,6 +660,10 @@ async function main(): Promise<void> {
     window.once('closed', () => { resolve() })
   })
 
+  const productSession = process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash'
+    ? new ProductSession(join(app.getPath('userData'), 're-vash-session.json'), new URL(process.env.OS_DASH_PLATFORM_URL ?? 'http://127.0.0.1:3701').origin) : undefined
+  await productSession?.load()
+
   protocol.handle(SCHEME, (request) => {
     const url = new URL(request.url)
     // Shell-owned documents live in the application bundle and never pass through the Host.
@@ -671,7 +676,7 @@ async function main(): Promise<void> {
       if (backend.host === undefined || hostUrl === undefined || hostCookie === undefined) {
         return Promise.resolve(new Response(null, { status: 503 }))
       }
-      return forwardWebRequest(request, hostUrl, hostCookie)
+      return forwardWebRequest(request, hostUrl, hostCookie, productSession)
     }
     return Promise.resolve(new Response(null, { status: 404 }))
   })
@@ -717,7 +722,7 @@ async function main(): Promise<void> {
     if (requested.host !== target.host) { callback({}); return }
     const headers = Object.fromEntries(Object.entries(details.requestHeaders).map(([name, value]) => [name.toLowerCase(), value]))
     if (headers.origin !== 'dsh-app://app') { callback({ cancel: true }); return }
-    callback({ requestHeaders: { ...headers, origin: target.origin, cookie: hostCookie, 'sec-fetch-site': 'same-origin' } })
+    callback({ requestHeaders: { ...headers, origin: target.origin, cookie: [hostCookie, productSession?.cookie()].filter(Boolean).join('; '), 'sec-fetch-site': 'same-origin' } })
   })
 
   const assertMainApplication = (event: IpcMainInvokeEvent): BrowserWindow => {
@@ -749,6 +754,11 @@ async function main(): Promise<void> {
     if (event.sender !== mainWindow?.webContents || event.senderFrame !== mainWindow.webContents.mainFrame
       || new URL(event.senderFrame.url).origin !== new URL(applicationUrl).origin) {
       throw new Error('desktop welcome: rejected locale request from an unowned frame')
+    }
+    // Product login needs locale before protected Host settings are available.
+    // LocaleRuntime adopts the saved preference through its settings subscription after login.
+    if (process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash') {
+      return { languages: systemLanguages, preference: null }
     }
     if (welcomeBackend === undefined) throw new Error('desktop welcome: backend unavailable')
     return { languages: systemLanguages, preference: await welcomeBackend.readLocalePreference() }
@@ -922,10 +932,10 @@ async function main(): Promise<void> {
     updates.dispose()
   })
 
-  const applicationIconPath = development ? join(app.getAppPath(), 'resources', 'icon-windows.png')
+  const applicationIconPath = development ? process.env.OS_DASH_BRAND_ICON ?? join(app.getAppPath(), 'resources', 'icon-windows.png')
     : join(process.resourcesPath, 'icon.png')
   app.setAboutPanelOptions({
-    applicationName: 'DeepSeek Harness',
+    applicationName: process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash' ? '空烬' : 'DeepSeek Harness',
     applicationVersion: app.getVersion(),
     // The release has no separate build number; omit Electron's bundle version.
     version: '',
@@ -975,7 +985,7 @@ async function main(): Promise<void> {
   ]
   const refreshApplicationMenu = (): void => {
     Menu.setApplicationMenu(Menu.buildFromTemplate(process.platform === 'win32' ? devToolsItems : [{
-      label: darwin ? app.name : currentDesktopLocale().messages.application,
+      label: darwin ? (process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash' ? '空烬' : app.name) : currentDesktopLocale().messages.application,
       submenu: [...applicationItems(), ...devToolsItems],
     }, ...platformMenus()]))
     tray?.relabel()
@@ -1196,6 +1206,7 @@ async function main(): Promise<void> {
   }
   const openInitialWindow = async (): Promise<void> => {
     if (quitting || recovery.active) return
+    if (process.env.DSH_CLIENT_BUILD_PROFILE === 're-vash') { await enterWorkspace(); return }
     const state = await readWelcomeState()
     if (isQuitting() || backend.state.phase !== 'ready') return
     locale = resolveDesktopStartupLocale(state.localePreference, systemLanguages)

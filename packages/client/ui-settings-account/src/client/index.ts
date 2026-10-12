@@ -230,7 +230,7 @@ export function apply(ctx: Context): void {
       throw result.error
     },
   }
-  if ('dshDesktop' in globalThis) {
+  if ('dshDesktop' in globalThis && process.env.DSH_CLIENT_BUILD_PROFILE !== 're-vash') {
     const controller = new DesktopOnboardingController(
       ctx.configForms.get<OnboardingSettings>(DESKTOP_ONBOARDING_NAMESPACE),
       ctx.configForms.get<{ transcriptView?: TranscriptViewMode | null; performanceUsage: 'compact' | 'detailed' }>('ui-chat'),

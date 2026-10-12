@@ -67,16 +67,19 @@ export class RemoteStreamMuxServer {
    * @param socket - carrier socket transferred to the WebSocket server.
    * @param head - bytes already read after the HTTP upgrade headers.
    * @param peer - Peer the upgrade was admitted as.
+   * @param authorizeStream - Optional current-authorization check before dispatching each logical stream.
    */
-  handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer, peer: PeerScope): void {
+  handleUpgrade(req: IncomingMessage, socket: Duplex, head: Buffer, peer: PeerScope, authorizeStream?: () => Promise<void>): void {
     this.server.handleUpgrade(req, socket, head, (websocket) => {
       const release = bindPeer(websocket, peer)
       if (release === undefined) return
       this.missedHeartbeats.set(websocket, 0)
       websocket.on('pong', () => { this.missedHeartbeats.set(websocket, 0) })
       this.startHeartbeat()
-      const bound: BoundStreamOpener = (endpoint, payload, uplink, control) =>
-        this.open(endpoint, payload, uplink, peer, control)
+      const bound: BoundStreamOpener = async (endpoint, payload, uplink, control) => {
+        await authorizeStream?.()
+        return this.open(endpoint, payload, uplink, peer, control)
+      }
       const connection = new RemoteStreamMuxConnection(websocket, bound, this.failure, this.streamInboxBytes)
       const done = connection.run()
       this.connections.add(done)

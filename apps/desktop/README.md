@@ -22,6 +22,12 @@ Desktop microphone access is restricted to audio requests from the primary `dsh-
 
 Press F12 (Fn+F12 on media-key keyboards), Command+Option+I on macOS, or Ctrl+Shift+I on Windows to toggle DevTools for the focused application page, including in packaged builds. These native shortcuts use hidden application-menu items. Update overlays and packaged embedded browser guests disable DevTools.
 
+## Product composition
+
+With `DSH_CLIENT_BUILD_PROFILE=re-vash`, the shell enters the product login directly and uses application resources supplied by `OS_DASH_BRAND_ASSETS`. `OS_DASH_PRODUCT_DIST` supplies self-contained plugins and a portable profile to the packaged runtime; `OS_DASH_PRODUCT_PATCH` selects the workspace profile during development. Product session cookies stay in a main-process file under userData, scoped to `OS_DASH_PLATFORM_URL` and their server expiry. HTTP forwarding and WebSocket headers carry that session alongside the launch-carrier cookie; logout clears the saved value. The ordinary Harness composition retains its account welcome flow and assets.
+
+Product login initializes its language from the operating system without reading protected Host settings. After login, the client locale service adopts the saved language through its authenticated settings subscription. The native locale IPC accepts only the owned application main frame; business API and stream authentication remains required.
+
 ## Terminal command
 
 The application menu's **Manage dsh Command…** entry, immediately below **Check for Updates…**, shows the current command and offers Install, Repair, and Remove. The command uses Desktop's installed runtime and the ordinary [dsh CLI](../cli/README.md), including when the Desktop application is closed. Open a new terminal after installation and run `dsh --version`.

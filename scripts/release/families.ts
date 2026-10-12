@@ -14,6 +14,7 @@ import { resolve } from 'node:path'
 import {
   officialClientBuildEnvironment,
   readClientBuildRecord,
+  type ClientBuildEnvironment,
 } from '../client-build-environment.ts'
 import { validateTarballPayload } from '../publication-payload.ts'
 
@@ -111,8 +112,9 @@ export abstract class ReleaseFamily {
    * Assert that built artifacts match this release family's required profile.
    * Families without environment-selected artifacts accept every build tree.
    * @param _root - repository root containing generated artifacts.
+   * @param _environment - explicit product build values; omitted for the family default.
    */
-  verifyBuildArtifacts(_root: string): void {}
+  verifyBuildArtifacts(_root: string, _environment?: ClientBuildEnvironment): void {}
 
   /**
    * Discover this family's members.
@@ -327,9 +329,9 @@ class DshFamily extends ReleaseFamily {
   ] as const
   readonly tagPrefix = 'dsh-v'
 
-  /** Require current artifacts from a complete official client build. */
-  override verifyBuildArtifacts(root: string): void {
-    readClientBuildRecord(root, officialClientBuildEnvironment(root))
+  /** Require current artifacts from the official build, or an explicitly supplied product environment. */
+  override verifyBuildArtifacts(root: string, environment?: ClientBuildEnvironment): void {
+    readClientBuildRecord(root, environment ?? officialClientBuildEnvironment(root))
   }
 
   /**

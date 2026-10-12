@@ -288,3 +288,17 @@
 .overlayLayer > * {
   pointer-events: auto;
 }
+
+.frame[data-mobile-product] {
+  --dsh-frame-top-clearance: 52px;
+}
+.frame[data-mobile-product] .leadingSeat {
+  left: 16px;
+  top: max(12px, env(safe-area-inset-top));
+}
+.frame[data-mobile-product] .sidebarCol[hidden] {
+  display: none;
+}
+
+.frame[data-mobile-product] .centerCol { grid-column: 2; grid-row: 1; }
+.frame[data-mobile-product] .rightbarCol { grid-column: 3; grid-row: 1; }
