@@ -21,7 +21,7 @@ it('retains product login across shell restart and deletes it on logout without 
   expect(second.cookie()).toBe(first.cookie())
   const other = new ProductSession(file, 'https://other.example'); await other.load()
   expect(other.cookie()).toBe('')
-  const fetch = vi.fn().mockResolvedValue(new Response('{}')); vi.stubGlobal('fetch', fetch)
+  const fetch = vi.fn<(input: RequestInfo | URL, init?: RequestInit) => Promise<Response>>().mockResolvedValue(new Response('{}')); vi.stubGlobal('fetch', fetch)
   await forwardWebRequest(new Request('dsh-app://app/api/me'), 'http://127.0.0.1:1234/', 'dsh-auth=carrier', second)
   expect(new Headers(fetch.mock.calls[0]?.[1]?.headers).get('cookie')).toBe('dsh-auth=carrier; revash_session=synthetic')
   await second.accept('revash_session=; Expires=Thu, 01 Jan 1970 00:00:00 GMT')
