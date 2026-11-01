@@ -14,9 +14,3 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-@media (max-width: 600px) {
-  .action { flex-wrap: wrap; width: 100%; }
-  .action button { flex: none; min-height: 44px; white-space: nowrap; }
-  .error { max-width: 100%; white-space: normal; }
-}

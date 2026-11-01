@@ -70,8 +70,6 @@ Access: the settings shell and the `settings.open` shortcut are registered only 
 
 The shell declares settings.launcher for an account-owned sidebar menu and retains the Settings button as its fallback. The launcher receives settingsOpen, whose false-to-true edge marks one Settings entry, so a registrant acts once per entry instead of on every re-render inside one open. Closing the dialog returns focus to the active launcher. In the expanded sidebar, the fallback uses the navigation rows' compact icon-label alignment and inset hover fill. Contributed launchers own their insets; the shell keeps its row full-width and its status indicator's trailing edge independent of account state. The collapsed rail retains its centered 36 × 36 px control.
 
-Below 600px, Settings stacks a horizontally scrollable section navigation above the content. Header actions occupy a separate row below navigation on narrow screens. The panel uses the dynamic viewport height and safe-area insets; section content scrolls independently, and the close button has a 44px touch target.
-
 <details>
 <summary>Implementation internals — click to expand</summary>
 
