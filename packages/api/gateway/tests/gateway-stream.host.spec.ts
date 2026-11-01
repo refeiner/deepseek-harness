@@ -343,6 +343,46 @@ afterEach(async () => {
 })
 
 describe('Typert Remote streams', () => {
+  it.each(['refused', 'thrown'] as const)('releases an admitted API Peer when upgrade policy is %s', async (failure) => {
+    const { ctx, service } = await setup(true)
+    const origin = `http://127.0.0.1:${String(ctx.webServer.port)}`
+    const target = new URL(ctx.connection.authenticatedUrl(`${origin}/connect`))
+    const response = await fetch(target, { redirect: 'manual' })
+    await response.arrayBuffer()
+    const cookie = response.headers.get('set-cookie')?.split(';', 1)[0]
+    if (cookie === undefined) throw new Error('API Peer fixture did not receive a cookie')
+    const request = { headers: { host: target.host, cookie } }
+    const admission = ctx.connection.admit(request)
+    if ('rejection' in admission) throw new Error('API Peer fixture was not admitted')
+    expect(admission.peer.signal.aborted).toBe(false)
+    ctx.on('connection/upgrade', async (_request, socket) => {
+      if (failure === 'thrown') throw new Error('fixture upgrade policy failed')
+      socket.end('HTTP/1.1 401 Unauthorized\r\nConnection: close\r\n\r\n')
+    })
+    const socket = new WebSocket(`${origin.replace('http:', 'ws:')}/api/remote.mux`, { headers: { cookie } })
+    const closed = new Promise<void>((resolve) => { socket.once('close', () => { resolve() }) })
+    let status: number | undefined
+    socket.on('error', () => { /* Rejected upgrades end the client handshake. */ })
+    socket.on('unexpected-response', (_request, response) => {
+      status = response.statusCode
+      response.resume()
+      socket.terminate()
+    })
+    try {
+      await closed
+      if (failure === 'refused') expect(status).toBe(401)
+      await vi.waitFor(() => {
+        const current = ctx.connection.admit(request)
+        expect('rejection' in current ? current.rejection : undefined).toBe(401)
+        expect(admission.peer.signal.aborted).toBe(true)
+      })
+      expect(service.signals).toHaveLength(0)
+    } finally {
+      socket.terminate()
+      await closed
+    }
+  })
+
   it('rechecks policy admission for each new logical stream on an existing socket', async () => {
     const { ctx, service } = await setup(true)
     let active = true

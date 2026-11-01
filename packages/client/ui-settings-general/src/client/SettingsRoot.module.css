@@ -325,6 +325,44 @@
   }
 }
 
+/* Narrow browser actions keep independent rows and 44px touch targets. */
+@media (max-width: 599px) {
+  :global(html:not([data-windows-titlebar]):not([data-platform='darwin'])) .panel {
+    grid-template-rows: auto auto auto minmax(0, 1fr);
+    grid-template-areas:
+      'title close'
+      'nav nav'
+      'actions actions'
+      'options options';
+  }
+
+  :global(html:not([data-windows-titlebar]):not([data-platform='darwin'])) .header {
+    display: contents;
+  }
+
+  :global(html:not([data-windows-titlebar]):not([data-platform='darwin'])) .actions {
+    grid-area: actions;
+    margin-left: 0;
+    padding: 0 16px 12px;
+  }
+
+  :global(html:not([data-windows-titlebar]):not([data-platform='darwin'])) .actions button {
+    min-height: 44px;
+    white-space: nowrap;
+  }
+
+  :global(html:not([data-windows-titlebar]):not([data-platform='darwin'])) .close {
+    grid-area: close;
+    width: 44px;
+    height: 44px;
+    margin: 12px 16px 0 0;
+  }
+
+  :global(html:not([data-windows-titlebar]):not([data-platform='darwin'])) .navCell {
+    min-height: 44px;
+  }
+}
+
 /* Visually-hidden text seat (close button accessible name from slot content). */
 .hiddenLabel {
   position: absolute;
